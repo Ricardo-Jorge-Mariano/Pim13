@@ -113,17 +113,21 @@ class App(tk.Tk):
         self.tab_notas = ttk.Frame(self.notebook)
         # --- NOVO: Aba de Busca/Boletim ---
         self.tab_boletim = ttk.Frame(self.notebook)
+        self.tab_exames = ttk.Frame(self.notebook)
         
         self.notebook.add(self.tab_gestao, text=" Gestão ")
         self.notebook.add(self.tab_alunos, text=" Alunos ")
         self.notebook.add(self.tab_notas, text=" Notas e Faltas ")
-        self.notebook.add(self.tab_boletim, text=" Boletim Aluno ") # Nova aba
-        
+        self.notebook.add(self.tab_boletim, text=" Boletim Aluno ")
+        self.notebook.add(self.tab_exames, text=" Alunos em Exame ")  # Nova aba
+
         # --- Popula cada Aba ---
         self.criar_aba_gestao()
         self.criar_aba_alunos()
         self.criar_aba_notas()
-        self.criar_aba_boletim() # Nova aba
+        self.criar_aba_boletim()
+        self.criar_aba_exames()  # Nova aba
+
         
         self.carregar_dados_para_cache()
         self.atualizar_comboboxes_globais()
@@ -659,6 +663,58 @@ class App(tk.Tk):
         
         if not encontrou_matricula:
             self.tree_boletim.insert("", "end", values=("Aluno ainda não matriculado em turmas.", "", "", "", "", "", "", ""))
+
+        # --- NOVO: ABA ALUNOS EM EXAME ---
+    def criar_aba_exames(self):
+        frame_top = ttk.LabelFrame(self.tab_exames, text="Filtrar por Turma (opcional)", padding=10)
+        frame_top.pack(fill="x", side="top", pady=5, padx=5)
+
+        ttk.Label(frame_top, text="Turma:").grid(row=0, column=0, padx=5, sticky="w")
+        self.combo_exame_turma = ttk.Combobox(frame_top, width=40, state="readonly")
+        self.combo_exame_turma.grid(row=0, column=1, padx=5)
+        self.combo_exame_turma['values'] = [f"{nome} (ID: {id})" for id, nome in self.cache_turmas.items()]
+
+        ttk.Button(frame_top, text="Carregar Alunos em Exame", command=self.carregar_exames).grid(row=0, column=2, padx=10)
+
+        frame_lista = ttk.LabelFrame(self.tab_exames, text="Alunos com Status 'Exame'", padding=10)
+        frame_lista.pack(fill="both", expand=True, pady=5, padx=5)
+
+        cols = ('ra', 'nome', 'turma', 'materia', 'media', 'faltas', 'status')
+        self.tree_exames = ttk.Treeview(frame_lista, columns=cols, show='headings')
+        for col in cols:
+            self.tree_exames.heading(col, text=col.capitalize())
+            self.tree_exames.column(col, width=100)
+        self.tree_exames.column('nome', width=150)
+        self.tree_exames.column('turma', width=130)
+        self.tree_exames.column('materia', width=130)
+        self.tree_exames.pack(fill="both", expand=True)
+
+    def carregar_exames(self):
+        for row in self.tree_exames.get_children():
+            self.tree_exames.delete(row)
+
+        id_turma_filtro = self._get_id_from_combo(self.combo_exame_turma.get()) if self.combo_exame_turma.get() else None
+
+        MatriculaArray = Matricula * self.MAX_REGISTROS
+        buffer_matriculas = MatriculaArray()
+        num_matriculas = lib_c.carregarMatriculas(buffer_matriculas, self.MAX_REGISTROS)
+
+        count = 0
+        for i in range(num_matriculas):
+            m = buffer_matriculas[i]
+            status = m.status.decode('utf-8')
+            if status.lower() == "exame".lower() and (id_turma_filtro is None or m.id_turma == id_turma_filtro):
+                nome_aluno = self.cache_alunos.get(m.ra_aluno, "Desconhecido")
+                nome_turma = self.cache_turmas.get(m.id_turma, f"ID {m.id_turma}")
+                nome_materia = self.cache_materias.get(m.id_materia, f"ID {m.id_materia}")
+                self.tree_exames.insert("", "end", values=(
+                    m.ra_aluno, nome_aluno, nome_turma, nome_materia,
+                    f"{m.media_final:.2f}", m.faltas, status
+                ))
+                count += 1
+
+        messagebox.showinfo("Resultado", f"Foram encontrados {count} alunos em exame.")
+
 
 if __name__ == "__main__":
     app = App()
