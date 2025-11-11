@@ -198,4 +198,132 @@ int carregarTurmaMateria(TurmaMateria* buffer, int max_registros) {
     }
     fclose(f);
     return count;
+
 }
+2. 🧮 Função para calcular média e status automaticamente
+
+Em vez de preencher manualmente media_final e status, você pode automatizar:
+
+void calcularMediaStatus(Matricula *m) {
+    m->media_final = (m->np1 + m->np2 + m->pim) / 3.0;
+    if (m->faltas > 10)
+        strcpy(m->status, "Reprovado por falta");
+    else if (m->media_final >= 6.0)
+        strcpy(m->status, "Aprovado");
+    else
+        strcpy(m->status, "Reprovado");
+}
+
+
+🔹 Depois, basta chamar essa função antes de salvarMatricula() ou atualizarMatricula().
+
+3. 🧾 Função para exibir boletim de um aluno específico
+
+Usa os dados de matrícula + matérias:
+
+void mostrarBoletim(long ra) {
+    Matricula m;
+    Materia mat;
+    FILE *f = fopen(MATRICULAS_DB, "rb");
+    if (!f) {
+        printf("Nenhuma matrícula encontrada.\n");
+        return;
+    }
+    printf("\n--- BOLETIM DO ALUNO %ld ---\n", ra);
+    while (fread(&m, sizeof(Matricula), 1, f)) {
+        if (m.ra_aluno == ra) {
+            FILE *fm = fopen(MATERIAS_DB, "rb");
+            while (fread(&mat, sizeof(Materia), 1, fm)) {
+                if (mat.id == m.id_materia) {
+                    printf("Matéria: %s | NP1: %.1f | NP2: %.1f | PIM: %.1f | Média: %.1f | Status: %s\n",
+                           mat.nome, m.np1, m.np2, m.pim, m.media_final, m.status);
+                    break;
+                }
+            }
+            fclose(fm);
+        }
+    }
+    fclose(f);
+}
+
+4. 💾 Função para excluir registros
+
+Não altera nada no código original — só cria um novo arquivo sem o registro deletado.
+
+Exemplo: excluir aluno por RA:
+
+void excluirAluno(long ra) {
+    FILE *f_in = fopen(ALUNOS_DB, "rb");
+    FILE *f_out = fopen("temp.dat", "wb");
+    if (!f_in || !f_out) return;
+
+    Aluno a;
+    int removido = 0;
+
+    while (fread(&a, sizeof(Aluno), 1, f_in)) {
+        if (a.ra != ra)
+            fwrite(&a, sizeof(Aluno), 1, f_out);
+        else
+            removido = 1;
+    }
+
+    fclose(f_in);
+    fclose(f_out);
+    remove(ALUNOS_DB);
+    rename("temp.dat", ALUNOS_DB);
+
+    if (removido)
+        printf("Aluno %ld removido com sucesso.\n", ra);
+    else
+        printf("Aluno %ld não encontrado.\n", ra);
+}
+
+5. 📊 Estatísticas simples (usando matemática básica)
+
+Exemplo: calcular a média geral de todas as matérias de um aluno:
+
+float mediaGeralAluno(long ra) {
+    FILE *f = fopen(MATRICULAS_DB, "rb");
+    if (!f) return 0;
+    Matricula m;
+    float soma = 0;
+    int count = 0;
+    while (fread(&m, sizeof(Matricula), 1, f)) {
+        if (m.ra_aluno == ra) {
+            soma += m.media_final;
+            count++;
+        }
+    }
+    fclose(f);
+    return (count > 0) ? soma / count : 0;
+}
+
+6. 📆 Buscar alunos reprovados ou faltosos
+void listarReprovados() {
+    Matricula m;
+    FILE *f = fopen(MATRICULAS_DB, "rb");
+    if (!f) return;
+    printf("\n--- ALUNOS REPROVADOS ---\n");
+    while (fread(&m, sizeof(Matricula), 1, f)) {
+        if (strcmp(m.status, "Reprovado") == 0 ||
+            strcmp(m.status, "Reprovado por falta") == 0) {
+            printf("RA: %ld | Turma: %d | Matéria: %d | Média: %.2f | Faltas: %d\n",
+                   m.ra_aluno, m.id_turma, m.id_materia, m.media_final, m.faltas);
+        }
+    }
+    fclose(f);
+}
+
+7. 💡 Buscar alunos por nome (parcial)
+void buscarAlunoPorNome(char *parteNome) {
+    Aluno a;
+    FILE *f = fopen(ALUNOS_DB, "rb");
+    if (!f) return;
+    printf("\n--- BUSCA POR NOME CONTENDO '%s' ---\n", parteNome);
+    while (fread(&a, sizeof(Aluno), 1, f)) {
+        if (strstr(a.nome, parteNome))
+            printf("RA: %ld | Nome: %s | CPF: %s\n", a.ra, a.nome, a.cpf);
+    }
+    fclose(f);
+}
+
