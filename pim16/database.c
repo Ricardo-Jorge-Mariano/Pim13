@@ -200,94 +200,60 @@ int carregarTurmaMateria(TurmaMateria* buffer, int max_registros) {
     return count;
 
 }
-2. 🧮 Função para calcular média e status automaticamente
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-Em vez de preencher manualmente media_final e status, você pode automatizar:
+/* ==========================================================
+   NOTA: Adicione as definições das suas structs e nomes
+   de arquivos aqui para este código funcionar.
+   Exemplo (apenas para compilar):
+========================================================== */
 
-void calcularMediaStatus(Matricula *m) {
-    m->media_final = (m->np1 + m->np2 + m->pim) / 3.0;
-    if (m->faltas > 10)
-        strcpy(m->status, "Reprovado por falta");
-    else if (m->media_final >= 6.0)
-        strcpy(m->status, "Aprovado");
-    else
-        strcpy(m->status, "Reprovado");
+#define ALUNOS_DB "alunos.dat"
+#define MATERIAS_DB "materias.dat"
+#define MATRICULAS_DB "matriculas.dat"
+
+typedef struct {
+    long ra;
+    char nome[100];
+    char cpf[15];
+} Aluno;
+
+typedef struct {
+    int id;
+    char nome[100];
+} Materia;
+
+typedef struct {
+    int id_turma;
+    int id_materia;
+    long ra_aluno;
+    int faltas;
+    float np1;
+    float np2;
+    float pim;
+    float media_final;
+    char status[30];
+} Matricula;
+
 }
 
-
-🔹 Depois, basta chamar essa função antes de salvarMatricula() ou atualizarMatricula().
-
-3. 🧾 Função para exibir boletim de um aluno específico
-
-Usa os dados de matrícula + matérias:
-
-void mostrarBoletim(long ra) {
-    Matricula m;
-    Materia mat;
-    FILE *f = fopen(MATRICULAS_DB, "rb");
-    if (!f) {
-        printf("Nenhuma matrícula encontrada.\n");
-        return;
-    }
-    printf("\n--- BOLETIM DO ALUNO %ld ---\n", ra);
-    while (fread(&m, sizeof(Matricula), 1, f)) {
-        if (m.ra_aluno == ra) {
-            FILE *fm = fopen(MATERIAS_DB, "rb");
-            while (fread(&mat, sizeof(Materia), 1, fm)) {
-                if (mat.id == m.id_materia) {
-                    printf("Matéria: %s | NP1: %.1f | NP2: %.1f | PIM: %.1f | Média: %.1f | Status: %s\n",
-                           mat.nome, m.np1, m.np2, m.pim, m.media_final, m.status);
-                    break;
-                }
-            }
-            fclose(fm);
-        }
-    }
-    fclose(f);
-}
-
-4. 💾 Função para excluir registros
-
-Não altera nada no código original — só cria um novo arquivo sem o registro deletado.
-
-Exemplo: excluir aluno por RA:
-
-void excluirAluno(long ra) {
-    FILE *f_in = fopen(ALUNOS_DB, "rb");
-    FILE *f_out = fopen("temp.dat", "wb");
-    if (!f_in || !f_out) return;
-
-    Aluno a;
-    int removido = 0;
-
-    while (fread(&a, sizeof(Aluno), 1, f_in)) {
-        if (a.ra != ra)
-            fwrite(&a, sizeof(Aluno), 1, f_out);
-        else
-            removido = 1;
-    }
-
-    fclose(f_in);
-    fclose(f_out);
-    remove(ALUNOS_DB);
-    rename("temp.dat", ALUNOS_DB);
-
-    if (removido)
-        printf("Aluno %ld removido com sucesso.\n", ra);
-    else
-        printf("Aluno %ld não encontrado.\n", ra);
-}
-
-5. 📊 Estatísticas simples (usando matemática básica)
-
-Exemplo: calcular a média geral de todas as matérias de um aluno:
-
+/**
+ * @brief Calcula a média geral (média de todas as matérias) de um aluno.
+ * @return A média geral, ou 0 se o aluno não tiver matrículas.
+ */
 float mediaGeralAluno(long ra) {
     FILE *f = fopen(MATRICULAS_DB, "rb");
-    if (!f) return 0;
+    if (f == NULL) {
+        printf("Erro ao abrir matriculas.dat\n");
+        return 0;
+    }
+    
     Matricula m;
     float soma = 0;
     int count = 0;
+
     while (fread(&m, sizeof(Matricula), 1, f)) {
         if (m.ra_aluno == ra) {
             soma += m.media_final;
@@ -295,35 +261,67 @@ float mediaGeralAluno(long ra) {
         }
     }
     fclose(f);
-    return (count > 0) ? soma / count : 0;
+
+    if (count == 0) {
+        return 0; // Evita divisão por zero
+    }
+    
+    return soma / count;
 }
 
-6. 📆 Buscar alunos reprovados ou faltosos
+/**
+ * @brief Lista todos os alunos reprovados (por nota ou falta).
+ */
 void listarReprovados() {
-    Matricula m;
     FILE *f = fopen(MATRICULAS_DB, "rb");
-    if (!f) return;
-    printf("\n--- ALUNOS REPROVADOS ---\n");
+    if (f == NULL) {
+         printf("Erro: Nao foi possivel abrir o arquivo de matriculas.\n");
+        return;
+    }
+    
+    Matricula m;
+    int encontrados = 0;
+    
+    printf("\n--- ALUNOS COM REPROVACAO ---\n");
     while (fread(&m, sizeof(Matricula), 1, f)) {
-        if (strcmp(m.status, "Reprovado") == 0 ||
-            strcmp(m.status, "Reprovado por falta") == 0) {
-            printf("RA: %ld | Turma: %d | Matéria: %d | Média: %.2f | Faltas: %d\n",
-                   m.ra_aluno, m.id_turma, m.id_materia, m.media_final, m.faltas);
+        // Verifica se o status NÃO é "Aprovado"
+        if (strcmp(m.status, "Aprovado") != 0) {
+            printf("RA: %ld | Matéria: %d | Média: %.2f | Faltas: %d | Status: %s\n",
+                   m.ra_aluno, m.id_materia, m.media_final, m.faltas, m.status);
+            encontrados++;
         }
     }
     fclose(f);
+
+    if (encontrados == 0) {
+        printf("Nenhum aluno reprovado encontrado.\n");
+    }
 }
 
-7. 💡 Buscar alunos por nome (parcial)
+/**
+ * @brief Busca alunos por parte do nome (case-sensitive).
+ */
 void buscarAlunoPorNome(char *parteNome) {
-    Aluno a;
     FILE *f = fopen(ALUNOS_DB, "rb");
-    if (!f) return;
+    if (f == NULL) {
+        printf("Erro: Nao foi possivel abrir o arquivo de alunos.\n");
+        return;
+    }
+    
+    Aluno a;
+    int encontrados = 0;
+
     printf("\n--- BUSCA POR NOME CONTENDO '%s' ---\n", parteNome);
     while (fread(&a, sizeof(Aluno), 1, f)) {
-        if (strstr(a.nome, parteNome))
+        // strstr encontra 'parteNome' dentro de 'a.nome'
+        if (strstr(a.nome, parteNome)) {
             printf("RA: %ld | Nome: %s | CPF: %s\n", a.ra, a.nome, a.cpf);
+            encontrados++;
+        }
     }
     fclose(f);
-}
 
+    if (encontrados == 0) {
+        printf("Nenhum aluno encontrado com o termo '%s'.\n", parteNome);
+    }
+}
