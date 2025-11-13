@@ -3,7 +3,6 @@
 #include <stdlib.h> 
 
 // --- 1. DEFINIÇÃO DAS ESTRUTURAS ---
-// (Idênticas à versão 3)
 
 typedef struct {
     long ra; 
@@ -41,7 +40,6 @@ typedef struct {
 
 
 // --- 2. NOMES DOS ARQUIVOS DE DADOS ---
-// (Idênticos à versão 3)
 const char* ALUNOS_DB = "alunos.dat";
 const char* TURMAS_DB = "turmas.dat";
 const char* MATERIAS_DB = "materias.dat";
@@ -84,7 +82,6 @@ int buscarAlunoPorRA(long ra_buscado, Aluno* out_aluno) {
     return 0; 
 }
 
-// --- NOVO: Função para buscar por CPF ---
 // Retorna 1 se achou, 0 se não
 int buscarAlunoPorCPF(char* cpf_buscado, Aluno* out_aluno) {
     FILE *f = fopen(ALUNOS_DB, "rb");
@@ -104,7 +101,7 @@ int buscarAlunoPorCPF(char* cpf_buscado, Aluno* out_aluno) {
 }
 
 
-// --- 4. FUNÇÕES DE TURMAS (Sem mudanças) ---
+// --- 4. FUNÇÕES DE TURMAS  ---
 void salvarTurma(Turma turma) {
     FILE *f = fopen(TURMAS_DB, "ab");
     if (f == NULL) return;
@@ -122,7 +119,7 @@ int carregarTurmas(Turma* buffer, int max_turmas) {
     return count;
 }
 
-// --- 5. FUNÇÕES DE MATÉRIAS (Sem mudanças) ---
+// --- 5. FUNÇÕES DE MATÉRIAS  ---
 void salvarMateria(Materia materia) {
     FILE *f = fopen(MATERIAS_DB, "ab");
     if (f == NULL) return;
@@ -140,7 +137,7 @@ int carregarMaterias(Materia* buffer, int max_materias) {
     return count;
 }
 
-// --- 6. FUNÇÕES DE MATRÍCULA (NOTAS) (Sem mudanças) ---
+// --- 6. FUNÇÕES DE MATRÍCULA (NOTAS)  ---
 void salvarMatricula(Matricula matricula) {
     FILE *f = fopen(MATRICULAS_DB, "ab");
     if (f == NULL) return;
@@ -182,7 +179,7 @@ void atualizarMatricula(Matricula matricula_atualizada) {
     rename("temp.dat", MATRICULAS_DB);
 }
 
-// --- 7. FUNÇÕES DE GRADE (TURMA-MATÉRIA) (Sem mudanças) ---
+// --- 7. FUNÇÕES DE GRADE (TURMA-MATÉRIA)  ---
 void salvarTurmaMateria(TurmaMateria tm) {
     FILE *f = fopen(GRADE_DB, "ab");
     if (f == NULL) return;
