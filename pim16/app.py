@@ -40,7 +40,7 @@ except OSError as e:
     messagebox.showerror("Erro Crítico", f"Não foi possível carregar a DLL. {e}")
     exit()
 
-# --- Define os tipos de argumentos e retorno (BOA PRÁTICA) ---
+# --- Define os tipos de argumentos e retorno ---
 
 # Aluno
 lib_c.salvarAluno.argtypes = [Aluno]
@@ -48,7 +48,7 @@ lib_c.carregarAlunos.argtypes = [ctypes.POINTER(Aluno), ctypes.c_int]
 lib_c.carregarAlunos.restype = ctypes.c_int
 lib_c.buscarAlunoPorRA.argtypes = [ctypes.c_long, ctypes.POINTER(Aluno)]
 lib_c.buscarAlunoPorRA.restype = ctypes.c_int
-# --- NOVO: Definição da busca por CPF ---
+# ---  Definição da busca por CPF ---
 lib_c.buscarAlunoPorCPF.argtypes = [ctypes.c_char_p, ctypes.POINTER(Aluno)]
 lib_c.buscarAlunoPorCPF.restype = ctypes.c_int
 
@@ -74,7 +74,7 @@ lib_c.carregarTurmaMateria.argtypes = [ctypes.POINTER(TurmaMateria), ctypes.c_in
 lib_c.carregarTurmaMateria.restype = ctypes.c_int
 
 
-# --- 2. A Lógica de Cálculo (Python) (Sem mudanças) ---
+# --- 2. A Lógica de Cálculo (Python)  ---
 def calcular_status(np1, np2, pim, faltas):
     if faltas >= 15:
         media = 0.0
@@ -111,7 +111,7 @@ class App(tk.Tk):
         self.tab_gestao = ttk.Frame(self.notebook)
         self.tab_alunos = ttk.Frame(self.notebook)
         self.tab_notas = ttk.Frame(self.notebook)
-        # --- NOVO: Aba de Busca/Boletim ---
+        # ---  Aba de Busca/Boletim ---
         self.tab_boletim = ttk.Frame(self.notebook)
         self.tab_exames = ttk.Frame(self.notebook)
         
@@ -205,7 +205,7 @@ class App(tk.Tk):
         except:
             return None
 
-    # --- ABA 1: GESTÃO (Idêntica à Versão 3) ---
+    # --- ABA 1: GESTÃO  ---
     def criar_aba_gestao(self):
         nb_gestao = ttk.Notebook(self.tab_gestao)
         nb_gestao.pack(fill="both", expand=True, padx=5, pady=5)
@@ -342,7 +342,7 @@ class App(tk.Tk):
         self.label_busca_resultado = ttk.Label(frame_busca, text="Nenhum aluno buscado.", foreground="blue")
         self.label_busca_resultado.grid(row=1, column=0, columnspan=3, pady=5)
         
-        # --- MUDANÇA (Request 1): Painel de Matrícula simplificado ---
+        # ---  (Request 1): Painel de Matrícula simplificado ---
         self.frame_matricular = ttk.LabelFrame(tab_buscar_matricular, text="Matricular Aluno na Turma", padding=10)
         self.frame_matricular.pack(fill="x", side="top", pady=10)
 
@@ -350,7 +350,6 @@ class App(tk.Tk):
         self.combo_turma_mat = ttk.Combobox(self.frame_matricular, width=40, state="readonly")
         self.combo_turma_mat.grid(row=0, column=1, sticky="ew", padx=5, pady=2)
         
-        # O Combobox de Matéria foi REMOVIDO
         
         self.btn_matricular = ttk.Button(self.frame_matricular, text="Matricular Aluno na Turma", 
                                          command=self.matricular_aluno_na_turma, state="disabled") # Novo comando
@@ -395,7 +394,7 @@ class App(tk.Tk):
             self.ra_aluno_encontrado = None
             self.btn_matricular.config(state="disabled") 
 
-    # --- NOVO (Request 1): Lógica de Matrícula na Turma Inteira ---
+    # --- Lógica de Matrícula na Turma Inteira ---
     def matricular_aluno_na_turma(self):
         if self.ra_aluno_encontrado is None:
             return messagebox.showerror("Erro", "Nenhum aluno selecionado. Busque um RA primeiro.")
@@ -429,7 +428,7 @@ class App(tk.Tk):
         nome_turma = self.cache_turmas.get(id_turma, "Turma")
         messagebox.showinfo("Sucesso", f"{nome_aluno} matriculado em {count} matérias da turma {nome_turma}!")
 
-    # --- ABA 3: NOTAS E FALTAS (Lógica de filtro atualizada) ---
+    # --- ABA 3: NOTAS E FALTAS  ---
     def criar_aba_notas(self):
         frame_filtros = ttk.LabelFrame(self.tab_notas, text="Filtros", padding=10)
         frame_filtros.pack(fill="x", side="top", pady=5)
@@ -561,7 +560,7 @@ class App(tk.Tk):
         except Exception as e: messagebox.showerror("Erro", f"Ocorreu um erro: {e}")
 
 
-    # --- NOVO (Request 2 e 3): ABA BOLETIM ALUNO ---
+    # ---  ABA BOLETIM ALUNO ---
     def criar_aba_boletim(self):
         # Frame de Busca
         frame_busca = ttk.LabelFrame(self.tab_boletim, text="Busca de Aluno", padding=10)
@@ -664,7 +663,7 @@ class App(tk.Tk):
         if not encontrou_matricula:
             self.tree_boletim.insert("", "end", values=("Aluno ainda não matriculado em turmas.", "", "", "", "", "", "", ""))
 
-        # --- NOVO: ABA ALUNOS EM EXAME ---
+        # ABA ALUNOS EM EXAME ---
     def criar_aba_exames(self):
         frame_top = ttk.LabelFrame(self.tab_exames, text="Filtrar por Turma (opcional)", padding=10)
         frame_top.pack(fill="x", side="top", pady=5, padx=5)
